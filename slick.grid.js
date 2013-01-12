@@ -2545,6 +2545,13 @@ if (typeof Slick === "undefined") {
       // if so, do not steal the focus from the editor
       if (getEditorLock().commitCurrentEdit()) {
         setFocus();
+
+        // Overwrite default post commit behaviour
+        if (true) {
+          // Changed commit default behaviour: Instead of navigating down, select next cell and start edit.
+          // We first try the cell to the right, if there is no such cell the next first cell in the next row
+          editNextCell();
+        } else
         if (options.autoEdit) {
           navigateDown();
         }
@@ -2938,6 +2945,32 @@ if (typeof Slick === "undefined") {
       } else {
         setActiveCellInternal(getCellNode(activeRow, activeCell), (activeRow == getDataLength()) || options.autoEdit);
         return false;
+      }
+    }
+
+    /**
+     * Edits the next cell. For us the next cell is to the right, not to the bottom. Selects first cell in
+     * next line if this is the last editable cell in the current row
+     */
+    function editNextCell() {
+      if (!activeCellNode || !options.enableCellNavigation) {
+        return;
+      }
+      if (!getEditorLock().commitCurrentEdit()) {
+        return;
+      }
+      setFocus();
+
+      var pos = gotoNext(activeRow, activeCell, activePosX);
+      if (pos) {
+        var isAddNewRow = false;
+        scrollRowIntoView(pos.row, !isAddNewRow);
+        scrollCellIntoView(pos.row, pos.cell);
+        var startEdit = true;
+        setActiveCellInternal(getCellNode(pos.row, pos.cell), startEdit);
+        activePosX = pos.posX;
+      } else {
+        setActiveCellInternal(getCellNode(activeRow, activeCell), (activeRow == getDataLength()) || options.autoEdit);
       }
     }
 
